@@ -17,11 +17,9 @@ end
 begin
 	ROOT_DIR = @__DIR__
 	using Pkg; Pkg.activate(ROOT_DIR); Pkg.instantiate()
-	# Pkg.add("DataFrames"); Pkg.add("Plots"); Pkg.add("CSV")
-	Pkg.add("PlutoUI")
 	using DataFrames, Plots, CSV, PlutoUI
 	plotly() # Set the backend to be used by Plots.jl
-	md"Environment is set up."
+	md"*Environment is set up.*"
 end
 
 # ╔═╡ 704e53d0-5436-11eb-1c05-f3305cf77335
@@ -109,14 +107,14 @@ begin
 		# Plot duration curves side by side
 		load_sorted = sort(load, rev=true)
 		res_load_sorted = sort(res_load, rev=true)
-		p1 = plot(
+		p1 = Plots.plot(
 			hcat(load_sorted, res_load_sorted),
 			xlabel="Duration",
 			ylabel="Value [MW]",
 			lab=hcat("Load", "Residual Load"),
 			legend=:bottomleft,
 		)
-		ylims1 = ylims
+		ylims1 = ylims()
 		
 		sortidx = sortperm(load, rev=true)[1:n]
 		scatter_colours = [
@@ -124,7 +122,7 @@ begin
 			for i in sortidx
 		]
 		
-		p2 = scatter(load[sortidx], res_load[sortidx],
+		p2 = Plots.scatter(load[sortidx], res_load[sortidx],
 			xlabel="Load [MW]",
 			ylabel="Residual Load [MW]",
 			lab="",
@@ -134,27 +132,43 @@ begin
 		return p1, p2
 	end
 	
-	md"Functions defined."
+	md"*Functions defined.*"
 end
+
+# ╔═╡ 20398d5c-54b2-11eb-292f-abeb4d935aa8
+md"""
+First things first, pick a country (data is from the ENTSO-E TYNDP):
+
+**Country** = $(@bind country Select(["BE", "PT"]))
+"""
+
+# ╔═╡ 4246b5a0-54b2-11eb-1ccf-29b4f5e8e5bb
+ts_dict = load_time_series(country);
+
+# ╔═╡ 475a868e-54b2-11eb-245d-3d3ef5416837
+md"""
+Next, pick the number of weather + load years you want to consider:
+
+**Years**: $(@bind y NumberField(1:35, default=1))
+"""
+
+# ╔═╡ 6936365e-54b2-11eb-3280-bbbca0e307ff
+md"""
+Specify installed capacities of renewable generatos in order to produce the residual load duration curve:
+
+**Solar** [GW]: $(@bind k_solar NumberField(0:80))
+
+**Onshore Wind** [GW]: $(@bind k_wind_on NumberField(0:80))
+
+**Offshore Wind** [GW]: $(@bind k_wind_off NumberField(0:80))
+"""
 
 # ╔═╡ 12103490-5450-11eb-3f5a-ff54dee9895b
 md"""
-Country = $(@bind country Select(["BE", "PT"]))
+Finally, choose the number of scarcity time steps you want to consider. Keep in mind that if you're running an investment model over the course of a year, more than 10 scarcity time steps would be quite surprising (though of course this depends on your value of lost load).
 
-Installed solar power capacity [GW]: $(@bind k_solar NumberField(0:80))
-
-Installed onshore wind power capacity [GW]: $(@bind k_wind_on NumberField(0:80))
-
-Installed offshore wind power capacity [GW]: $(@bind k_wind_off NumberField(0:80))
-
-Years: $(@bind y NumberField(1:35, default=1))
-
-Number of scarcity time steps = $(@bind n NumberField(1:100))
-
+**Number of scarcity time steps** = $(@bind n NumberField(1:100))
 """
-
-# ╔═╡ 4916f13c-5454-11eb-36eb-f9d58a491b8e
-ts_dict = load_time_series(country);
 
 # ╔═╡ 522a871a-5453-11eb-2451-f77e040e9e06
 begin
@@ -163,21 +177,33 @@ begin
 	);
 	years = 1:y;
 	md"""
-	Red markers in the plot below indicate a scarcity time step appears both in the load and the residual load.
+	The plot below on the left illustrates how the residual load duration curve changes with installed renewable capacity. The plot on the right shows the scarcity time steps (time steps of highest (residual) load) for the (residual) load. 
+	
+	Red markers in the plot below indicate a scarcity time step appears both in the load and the residual load, i.e. if you had assumed this was a scarcity time step based on the load duration curve, you would be correct also in the case of the residual load duration curve.
 	"""
 end
 
 # ╔═╡ 423c65b0-544d-11eb-3c6f-f166e99e6ec0
 plot(
 	plot_load_and_residual_load(ts_dict, years=years, capacities=capacities, n=n)...,
-	layout=(1,2)
+	layout=(1,2),
+	legend=false
 )
+
+# ╔═╡ a8be560c-54b3-11eb-0dc2-bdc20645d39b
+md"""
+What to make of this? Well, I noticed that increasing the solar in the case of Belgium keeps the same scarcity time steps. So that's good to know.
+"""
 
 # ╔═╡ Cell order:
 # ╟─704e53d0-5436-11eb-1c05-f3305cf77335
 # ╟─18cdfdc6-5437-11eb-1ff7-7387fe53bc04
 # ╟─f8095c2a-5436-11eb-2a10-dd5d588749ac
+# ╟─20398d5c-54b2-11eb-292f-abeb4d935aa8
+# ╟─4246b5a0-54b2-11eb-1ccf-29b4f5e8e5bb
+# ╟─475a868e-54b2-11eb-245d-3d3ef5416837
+# ╟─6936365e-54b2-11eb-3280-bbbca0e307ff
 # ╟─12103490-5450-11eb-3f5a-ff54dee9895b
-# ╟─4916f13c-5454-11eb-36eb-f9d58a491b8e
 # ╟─522a871a-5453-11eb-2451-f77e040e9e06
-# ╠═423c65b0-544d-11eb-3c6f-f166e99e6ec0
+# ╟─423c65b0-544d-11eb-3c6f-f166e99e6ec0
+# ╟─a8be560c-54b3-11eb-0dc2-bdc20645d39b
