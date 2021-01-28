@@ -95,14 +95,12 @@ begin
 	end
 	
 	function plot_load_and_residual_load(
-		ts_dict;
-		years=[1], # Years to consider
-		capacities=Dict(ts_name => 0.0 for ts_name in ts_names), # RES capacities
-		n::Int=100, # Number of scarcity time steps
-	)
-		load, res_load = get_residual_load(
-			ts_dict, years=years, capacities=capacities
+			ts_dict;
+			years=[1], # Years to consider
+			capacities=Dict(ts_name => 0.0 for ts_name in ts_names), # RES capacities
+			n::Int=100, # Number of scarcity time steps
 		)
+		load, res_load = get_residual_load(ts_dict; years=years, capacities=capacities)
 
 		# Plot duration curves side by side
 		load_sorted = sort(load, rev=true)
